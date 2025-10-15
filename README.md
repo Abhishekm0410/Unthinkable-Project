@@ -63,7 +63,13 @@ Advanced Features
 🛠️ Installation
 Prerequisites
 
+
 Python 3.9+
 Node.js 16+ (for frontend)
 PostgreSQL (optional, SQLite works for development)
 OpenAI API key or alternative LLM provider
+
+![demo](Demo1.png)
+![demo](Demo2.png)
+![demo](Demo3.png)
+![demo](Demo4.png)
