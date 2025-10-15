@@ -186,3 +186,95 @@ def insights(team_id):
         
         console.print(Panel(
             f"[bold]Total Reviews:[/bold] {data['total_reviews']}\n"
+            f"[bold]Average Score:[/bold] {data['average_score']}/100 ({data['improvement']})\n\n"
+            f"[bold]Common Patterns:[/bold]\n" +
+            "\n".join(f"  • {p}" for p in data['common_patterns']) +
+            "\n\n[bold]Top Issues This Month:[/bold]\n" +
+            "\n".join(f"  • {k}: {v} occurrences" for k, v in list(data['common_issues'].items())[:5]),
+            title=f"👥 Team Insights - {team_id}",
+            border_style="green"
+        ))
+        
+    except Exception as e:
+        console.print(f"[bold red]❌ Error: {str(e)}[/bold red]")
+
+@cli.command()
+@click.option('--limit', default=10, help='Number of reviews to show')
+def history(limit):
+    """Show review history"""
+    
+    try:
+        response = requests.get(f"{API_URL}/api/reviews?limit={limit}")
+        
+        if response.status_code != 200:
+            console.print(f"[bold red]❌ Error: {response.text}[/bold red]")
+            return
+        
+        data = response.json()
+        
+        if not data['reviews']:
+            console.print("[yellow]No reviews found[/yellow]")
+            return
+        
+        table = Table(title=f"Recent Reviews (Total: {data['total']})")
+        table.add_column("Review ID", style="cyan")
+        table.add_column("Score", justify="right")
+        table.add_column("Issues", justify="right")
+        table.add_column("Language", style="green")
+        table.add_column("Date", style="dim")
+        
+        for review in data['reviews']:
+            table.add_row(
+                review['review_id'][:20] + "...",
+                f"{review['score']}/100",
+                str(len(review['priority'])),
+                review.get('language', 'N/A'),
+                review.get('timestamp', 'N/A')[:19]
+            )
+        
+        console.print(table)
+        
+    except Exception as e:
+        console.print(f"[bold red]❌ Error: {str(e)}[/bold red]")
+
+@cli.command()
+def health():
+    """Check API health"""
+    
+    try:
+        response = requests.get(f"{API_URL}/health")
+        
+        if response.status_code == 200:
+            data = response.json()
+            console.print(Panel(
+                f"[bold green]✅ API is healthy[/bold green]\n\n"
+                f"Status: {data['status']}\n"
+                f"Total Reviews: {data.get('total_reviews', 0)}\n"
+                f"Timestamp: {data['timestamp']}",
+                title="🏥 Health Check",
+                border_style="green"
+            ))
+        else:
+            console.print("[bold red]❌ API is not responding[/bold red]")
+            
+    except Exception as e:
+        console.print(f"[bold red]❌ Cannot connect to API: {str(e)}[/bold red]")
+
+@cli.command()
+@click.argument('filepath', type=click.Path(exists=True))
+def syntax(filepath):
+    """Display code with syntax highlighting"""
+    
+    try:
+        with open(filepath, 'r') as f:
+            code = f.read()
+        
+        ext = Path(filepath).suffix[1:]
+        syntax = Syntax(code, ext, theme="monokai", line_numbers=True)
+        console.print(syntax)
+        
+    except Exception as e:
+        console.print(f"[bold red]❌ Error: {str(e)}[/bold red]")
+
+if __name__ == '__main__':
+    cli()
